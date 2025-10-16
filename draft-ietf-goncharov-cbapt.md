@@ -37,22 +37,25 @@ informative:
 
 --- abstract
 
-TODO Abstract
-
 The Concise Binary Object Representation (CBOR, RFC 8949 == STD 94)
 is a data format whose design goals include the possibility of
 extremely small code size, fairly small message size, and
 extensibility without the need for version negotiation.
 
-CBOR does not provide any forms of data compression.  While
+CBOR does not provide any forms of data compression.
+While
 traditional data compression techniques such as DEFLATE (RFC 1951)
 can work well for CBOR encoded data items, their disadvantage is that
 the recipient needs to decompress the compressed form to make use of
 the data.
+Moreover, there are sutuations where utilizing some application-known dictionary at a "preprocessing" can improve compression effectiveness of methods such as DEFLATE even in non-constrained environments (e.g. by not polluting compression window by known data).
 
-This documents defines format for compression of both unstructured raw BLOBs and CBOR documents, and for templating CBOR documents by concept of "atom"
+Also, there are tasks where known document ("template") may be instantiated by substituting different "variables" into it each time.
+At the same time, both compression and templating may be needed by some applications not only for CBOR documents, but also for unstructured raw BLOBs.
 
-TODO
+This documents defines format for compression and templating of both raw BLOBs and CBOR documents by concept of "atom".
+
+The CBAPT is a subset of the more general CBOR-TPL (separate specification) suitable to use by constrained devices.
 
 --- middle
 
@@ -141,6 +144,7 @@ TODO adapt from CBAR
   this documents deal with raw bytes, not everything could be expressed as
   CDDL and/or EDN so it wasn't polished/corrected.
 
+```
    CBAR-CBOR = #6.10([atoms, bytedict, CBAR, ? checksum])  ; 0x0a for "Atom"
              / #6.10([ (+ commands), CBAR, ? checksum])    ; full form
              / #6.10(CBAR)    ; binary string - everything other setup earlier
@@ -155,6 +159,7 @@ TODO adapt from CBAR
    bytedict = bstr / uint,           ; byte dictionary (mb empty) or it's hash
    CBAR = null / bstr .size (3..),   ; may have e.g. 40003 tag if DEFLATE'd
    checksum = uint
+```
 
   In atom definitions, each definition MUST use only prior atom numbers if
   it's CBAR itself (that is, defined with #6.10 tag).
@@ -294,7 +299,7 @@ TODO 23.01.25 #6.10(24(uint)) must expand to complete CBOR item
        #6.10(#6.123({     ; level 3 uses dictionary numer 3
                #6.10(1),  ; expanded to "foobar"
 	       ...
-             })),              
+             })),
              #6.10(s2),   ; level 2 again
 	     #6.10(1),    ; expanded to "quux"
 ```
