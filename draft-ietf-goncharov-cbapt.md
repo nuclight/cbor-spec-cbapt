@@ -26,7 +26,7 @@ venue:
 author:
  -
     fullname: "Vadim Goncharov"
-    organization: Your Organization Here
+    organization: Consultant
     email: "vadimnuclight@gmail.com"
 
 normative:
@@ -66,6 +66,8 @@ TODO source with history of thinking process lives at https://github.com/nucligh
 # Conventions and Definitions
 
 {::boilerplate bcp14-tagged}
+
+* CBAR (CBOR and generic BLOBs by-Atom Reducing) - format of binary string
 
 
 # Main text
@@ -178,17 +180,17 @@ TBD use 22098 for recursive "after unpacking, there are more CBAR inside"?
   A generalized view of application protocol is ordered sequence of messages
   decoded (or a sub-sequence if partial ordered):
 
-   new()       Message 1                   Message 2
-     |      .-------------.     .----------------------------.
-     |      | CBOR Item 1 |     |        CBOR Sequence       |
-     |      |             |     |-------------+--------------|
-     |      |             |     | CBOR Item 1 | CBOR Item 2  |
-     |----->|             |---->|             |              |----> ...
-     |      |             |     |             | {      lvl 1 |
-     |      |             |     |             |   [    lvl 2 |
-     |      |             |     |             |     {  lvl 3 |
-     |      |             |     |             |     },       |
-     |      |             |     |             |     s, lvl 2 |
+    new()       Message 1                   Message 2
+      |      .-------------.     .----------------------------.
+      |      | CBOR Item 1 |     |        CBOR Sequence       |
+      |      |             |     |-------------+--------------|
+      |      |             |     | CBOR Item 1 | CBOR Item 2  |
+      |----->|             |---->|             |              |----> ...
+      |      |             |     |             | {      lvl 1 |
+      |      |             |     |             |   [    lvl 2 |
+      |      |             |     |             |     {  lvl 3 |
+      |      |             |     |             |     },       |
+      |      |             |     |             |     s, lvl 2 |
             `-------------'     `-------------+--------------'
 
   However, observe that generic decoder does not need to know application
@@ -216,7 +218,7 @@ TBD use 22098 for recursive "after unpacking, there are more CBAR inside"?
   array are on level 2 (including string s), and elements in map in array
   would be on level 3. Thus, each top-level CBOR item could be viewed as being
   on level 0.
- 
+
   ## Tag equivalence
 
   This section borrows same chapter from [draft-cbor-packed] and extends it
@@ -286,14 +288,16 @@ TODO 23.01.25 #6.10(24(uint)) must expand to complete CBOR item
   in one message, on different level (think of JSON-lD's "@context"). Recall
   image above:
 
+```js
    {                      ; level 1 - default dictionary
-     [                    ; level 2 
+     [                    ; level 2
        #6.10(#6.123({     ; level 3 uses dictionary numer 3
                #6.10(1),  ; expanded to "foobar"
 	       ...
-             })),               
+             })),              
              #6.10(s2),   ; level 2 again
 	     #6.10(1),    ; expanded to "quux"
+```
 
   The same is for arrays, but to distinguish from dictionary setup, using
   #6.10 on namespace as array MUST always have Alternative (e.g. #6.121 for
@@ -386,24 +390,24 @@ TODO 23.01.25 #6.10(24(uint)) must expand to complete CBOR item
 
   Opcodes of IN_BLOB state, with possible <argument N>:
 
-  C0             - Atom 0
-  C1             - Atom 1
-  F5             - Atom 2
-  F6             - Atom 3
-  F7             - Atom 4
-  F8             - Atom 5
-  F9             - Atom 6
-  FA             - Atom 7
-  FB             - Atom 8
-  FC <VarUInt30> - Copy N Literal bytes, N MUST be greater than 1
-  FD <VarUInt30> - Decompress (dispense) atom N
-  FE byte/VInt21 - Escape next byte (Copy 1 literal byte) or Extended functions
-  FF             - Copy remaining_bytes literal bytes
-  any other byte - Output this byte
+    C0             - Atom 0
+    C1             - Atom 1
+    F5             - Atom 2
+    F6             - Atom 3
+    F7             - Atom 4
+    F8             - Atom 5
+    F9             - Atom 6
+    FA             - Atom 7
+    FB             - Atom 8
+    FC <VarUInt30> - Copy N Literal bytes, N MUST be greater than 1
+    FD <VarUInt30> - Decompress (dispense) atom N
+    FE byte/VInt21 - Escape next byte (Copy 1 literal byte) or Extended functions
+    FF             - Copy remaining_bytes literal bytes
+    any other byte - Output this byte
 
   FE code is special: if next byte following has value 0xC0 or more, then it
   is escape - argument is exactly this byte, which is just escaped, or, in
-  other words, it is shorter version of FC 01 <escaped_byte>. Otherwise, if
+  other words, it is shorter version of FC 01 \<escaped_byte>. Otherwise, if
   value is less than 0xC0, then it is treated as VarUInt30 Extended functions
   (see section about them below). However, due to format of VarUInt30, if it's
   first byte is less than 0xC0, then value is limited to 21 bits. Therefore,
@@ -432,33 +436,33 @@ TBD this hard to deal with remaining_bytes, forbid? discuss in section below
 
   Opcodes of IN_CBOR state, with <arguments> (and (mnemonics)):
 
-  1C <3 bytes>   - (terCio) Output 1A 00 <3 bytes>
-  1D             - Atom 0
-  1E             - Atom 1
-  1F <5 bytes>   - (Five) Output 1B 00 00 00 <5 bytes>
-  3C <3 bytes>   - (terCio) Output 3A 00 <3 bytes>
-  3D             - Atom 2
-  3E             - Atom 3
-  3F <5 bytes>   - Five-integer: Output 3B 00 00 00 <5 bytes>
-  5C <VarUInt30> - Convert atom N to binary string
-  5D             - Atom 4
-  5E             - Atom 5
-  7C <VarUInt30> - Convert atom N to text string
-  7D             - Atom 6
-  7E             - Atom 7
-  9C             - Atom 8
-  9D             - Atom 9
-  9E             - Atom 10
-  BC             - Atom 11
-  BD             - Atom 12
-  BE             - Atom 13
-  DC             - Atom 14
-  DD             - Atom 15
-  DE             - Atom 16
-  DF             - Atom 17
-  FC <VarUInt30> - Copy N Literal bytes, N MUST be greater than 1
-  FD <VarUInt30> - Decompress (dispense) atom N, N>17
-  FE <VarUInt30> - Extended functions
+    1C <3 bytes>   - (terCio) Output 1A 00 <3 bytes>
+    1D             - Atom 0
+    1E             - Atom 1
+    1F <5 bytes>   - (Five) Output 1B 00 00 00 <5 bytes>
+    3C <3 bytes>   - (terCio) Output 3A 00 <3 bytes>
+    3D             - Atom 2
+    3E             - Atom 3
+    3F <5 bytes>   - Five-integer: Output 3B 00 00 00 <5 bytes>
+    5C <VarUInt30> - Convert atom N to binary string
+    5D             - Atom 4
+    5E             - Atom 5
+    7C <VarUInt30> - Convert atom N to text string
+    7D             - Atom 6
+    7E             - Atom 7
+    9C             - Atom 8
+    9D             - Atom 9
+    9E             - Atom 10
+    BC             - Atom 11
+    BD             - Atom 12
+    BE             - Atom 13
+    DC             - Atom 14
+    DD             - Atom 15
+    DE             - Atom 16
+    DF             - Atom 17
+    FC <VarUInt30> - Copy N Literal bytes, N MUST be greater than 1
+    FD <VarUInt30> - Decompress (dispense) atom N, N>17
+    FE <VarUInt30> - Extended functions
 
   Decoder in IN_CBOR state expects same codepoints as in standard-conformant
   CBOR, plus actions from the table above. That is, on every standard element,
