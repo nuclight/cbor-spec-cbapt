@@ -19,7 +19,7 @@
 # Change the file extension to match the format (.xml for XML, etc...)
 #
 ###
-title: "TODO - Your title"
+title: "CBOR & generic BLOB Atoms, Packing and Templating"
 abbrev: "TODO - Abbreviation"
 category: info
 
