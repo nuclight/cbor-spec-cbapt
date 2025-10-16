@@ -55,7 +55,7 @@ At the same time, both compression and templating may be needed by some applicat
 
 This documents defines format for compression and templating of both raw BLOBs and CBOR documents by concept of "atom".
 
-The CBAPT is a subset of the more general CBOR-TPL (separate specification) suitable to use by constrained devices.
+The CBAPT is a subset of the more general CBOR-TPL (Templating & Programming Language, separate specification) suitable to use by constrained devices.
 
 --- middle
 
@@ -153,7 +153,7 @@ TODO adapt from CBAR
    atom = bstr                ; raw value
         / tstr                ; contents as raw value
         / #6.10(bstr)         ; itself CBAR - definition uses previous atoms
-	/ any                 ; valid CBOR fragment to substitute
+        / any                 ; valid CBOR fragment to substitute
 
    atoms = atomarr / uint / bstr,    ; atoms array (mb empty) or their hash
    bytedict = bstr / uint,           ; byte dictionary (mb empty) or it's hash
@@ -298,10 +298,10 @@ TODO 23.01.25 #6.10(24(uint)) must expand to complete CBOR item
      [                    ; level 2
        #6.10(#6.123({     ; level 3 uses dictionary numer 3
                #6.10(1),  ; expanded to "foobar"
-	       ...
+               ...
              })),
              #6.10(s2),   ; level 2 again
-	     #6.10(1),    ; expanded to "quux"
+             #6.10(1),    ; expanded to "quux"
 ```
 
   The same is for arrays, but to distinguish from dictionary setup, using
@@ -338,13 +338,13 @@ TODO 23.01.25 #6.10(24(uint)) must expand to complete CBOR item
 
   Rationale: naturally, it could have been a map, but map could have entries
              in any order, so it would require from decoder to 1) buffer
-	     everything till end of map is seen and start processing only
-	     then, and 2) some way to reference between map entries, when
-	     there is more than one operation of same type (that is, requiring
-	     array under a single map key). Thus, in array form it is possible
-	     for decoder to process entries immediately as they are seen,
-	     simplifying implementation and lowering memory requirements,
-	     while also allowing variable number of parameters per operation.
+             everything till end of map is seen and start processing only
+             then, and 2) some way to reference between map entries, when
+             there is more than one operation of same type (that is, requiring
+             array under a single map key). Thus, in array form it is possible
+             for decoder to process entries immediately as they are seen,
+             simplifying implementation and lowering memory requirements,
+             while also allowing variable number of parameters per operation.
 
   Full form at last produces an (in-memory) array of strings, which is then
   processed same as array in simple form. Thus, first simple form and overall
@@ -370,7 +370,7 @@ TODO 23.01.25 #6.10(24(uint)) must expand to complete CBOR item
 
              However, if discussion will conclude that 60+ bits needed (e.g.
              for unification with YANG SID), alternative VarUInt60 supporting
-	     60 bits in 8 bytes is posible:
+             60 bits in 8 bytes is posible:
 
              0..143 values coded as themselves                    bits:
              1001aaaa bbbbbbbb                                     - 12
@@ -393,7 +393,7 @@ TODO 23.01.25 #6.10(24(uint)) must expand to complete CBOR item
              11111110 aaaaaaaa bbbbbbbb cccccccc   ...    gggggggg - 56
              11111111 aaaaaaaa bbbbbbbb cccccccc   ...    hhhhhhhh - 64
 
-  Opcodes of IN_BLOB state, with possible <argument N>:
+  Opcodes of `IN_BLOB` state, with possible `<argument N>`:
 
     C0             - Atom 0
     C1             - Atom 1
@@ -412,7 +412,7 @@ TODO 23.01.25 #6.10(24(uint)) must expand to complete CBOR item
 
   FE code is special: if next byte following has value 0xC0 or more, then it
   is escape - argument is exactly this byte, which is just escaped, or, in
-  other words, it is shorter version of FC 01 \<escaped_byte>. Otherwise, if
+  other words, it is shorter version of FC 01 `<escaped_byte>`. Otherwise, if
   value is less than 0xC0, then it is treated as VarUInt30 Extended functions
   (see section about them below). However, due to format of VarUInt30, if it's
   first byte is less than 0xC0, then value is limited to 21 bits. Therefore,
@@ -424,22 +424,22 @@ TBD this hard to deal with remaining_bytes, forbid? discuss in section below
   chunk output, and in well-formed input it MUST not became less than zero.
   If `remaining_bytes` became zero (0), state is changed to IN_CBOR.
 
-  Rationale: UTF-8 since it's updated RFC can't encode codepoints higher than
-             0x10FFFF, thus bytes higher than 0xF5 can't appear in well-fromed
-	     UTF-8, and 0xC0 and 0xC1 also must not appear in conforming
-	     UTF-8, thus these bytes could be used inside CBOR Major Type 3
-	     (string) without escaping(*), as atoms often will be part of text
-	     strings, not only binary. For applications wanting to trade-off
-	     performance to compression ratio, every other byte means itself
-	     which allows to scan contents of text string byte-by-byte, saving
-	     few bytes - instead, for performance of decoder, FC code with
-	     length should be used, allowing to skip to next code.
+    Rationale: UTF-8 since it's updated RFC can't encode codepoints higher than
+               0x10FFFF, thus bytes higher than 0xF5 can't appear in well-formed
+               UTF-8, and 0xC0 and 0xC1 also must not appear in conforming
+               UTF-8, thus these bytes could be used inside CBOR Major Type 3
+               (string) without escaping(*), as atoms often will be part of text
+               strings, not only binary. For applications wanting to trade-off
+               performance to compression ratio, every other byte means itself
+               which allows to scan contents of text string byte-by-byte, saving
+               few bytes - instead, for performance of decoder, FC code with
+               length should be used, allowing to skip to next code.
 
-	     (*) This, of course, means not raw CBOR text strings (where such
-	     bytes are prohibited) but substrings of CBAR which will become
-	     valid CBOR data items after atom substitutions.
+               (*) This, of course, means not raw CBOR text strings (where such
+               bytes are prohibited) but substrings of CBAR which will become
+               valid CBOR data items after atom substitutions.
 
-  Opcodes of IN_CBOR state, with <arguments> (and (mnemonics)):
+  Opcodes of `IN_CBOR` state, with `<arguments>` (and (mnemonics)):
 
     1C <3 bytes>   - (terCio) Output 1A 00 <3 bytes>
     1D             - Atom 0
